@@ -1,6 +1,7 @@
 import os
 import ssl
 import urllib3
+import traceback
 import openpyxl
 from shareplum import Site
 from shareplum import Office365
@@ -48,8 +49,6 @@ try:
 # Caso ocorra algum erro no download
 except Exception as e:
     print(f"Erro ao baixar o arquivo: {str(e)}")
-    import traceback
-
     traceback.print_exc()
 
 # Abrindo planilha com os dados
