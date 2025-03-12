@@ -41,7 +41,7 @@ try:
     with open(arquivo_destino, "wb") as f:
         f.write(file_content)
 
-    print(f"Arquivo baixado com sucesso! Caminho do arquivo: {arquivo_destino}")
+    print(f"Arquivo baixado com sucesso!")
 # Caso ocorra algum erro no download
 except Exception as e:
     print(f"Erro ao baixar o arquivo: {str(e)}")
