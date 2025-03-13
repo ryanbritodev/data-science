@@ -55,7 +55,27 @@ except Exception as e:
 objeto_workbook = openpyxl.load_workbook(caminho_planilha)
 objeto_planilha = objeto_workbook.active
 
-# Acessando célula para testes
-celula_teste = objeto_planilha.cell(row=2, column=7)
-print(celula_teste.value)
 
+def pegar_maximo_linhas(*, objeto):
+    """
+    --> Função para capturar o valor máximo de linhas da planilha
+    :param objeto: Objeto de planilha que deve ser avaliado
+    """
+    linhas = 0
+    for maximo_linha, linha in enumerate(objeto, 1):
+        if not all(col.value is None for col in linha):
+            linhas += 1
+    return linhas
+
+
+# Pegando o máximo de linhas com conteúdo existentes na planilha
+maximo_linhas = pegar_maximo_linhas(objeto=objeto_planilha)
+
+# Iterando sobre todos os valores da coluna das idades (coluna G) e armazenando em uma lista
+valores_idade = []
+for celula in objeto_planilha["G"]:
+    valores_idade.append(celula.value)
+valores_idade.pop(0)
+
+# Fechando o workbook da Planilha
+objeto_workbook.close()
