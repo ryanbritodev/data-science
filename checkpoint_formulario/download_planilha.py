@@ -72,10 +72,10 @@ def pegar_maximo_linhas(*, objeto):
 maximo_linhas = pegar_maximo_linhas(objeto=objeto_planilha)
 
 # Iterando sobre todos os valores da coluna das idades (coluna G) e armazenando em uma lista
-valores_idade = []
-for celula in objeto_planilha["G"]:
-    valores_idade.append(celula.value)
-valores_idade.pop(0)
+# valores_idade = []
+# for celula in objeto_planilha["G"]:
+#     valores_idade.append(celula.value)
+# valores_idade.pop(0)
 
 # Fechando o workbook da Planilha
 objeto_workbook.close()
