@@ -12,31 +12,31 @@ from shareplum import Office365
 from shareplum.site import Version
 from dotenv import load_dotenv
 
+caminho_planilha = f"{os.path.dirname(__file__)}\\planilha.xlsx"
+
 
 def baixar_planilha():
     """
-    --> Função para baixar a planilha do SharePoint
+    --> Função para baixar a planilha do Microsoft 365 no SharePoint
     """
-    # Carregando variáveis de ambiente (credenciais)
+    # Carregando variáveis de ambiente (credenciais de usuário)
     load_dotenv()
 
-    # Configurações para certificação SSL (Firewall da FIAP)
-    urllib3.disable_warnings()  # Desabilita avisos sobre certificação SSL
-    ssl._create_default_https_context = ssl._create_unverified_context  # Contexto da certificação SSL para não verificar certificados
+    # Configurações do certificado SSL (Firewall da FIAP)
+    urllib3.disable_warnings()  # Desabilita os avisos do certificado SSL
+    ssl._create_default_https_context = ssl._create_unverified_context  # Criando um contexto que não verifica a certificação SSL
 
-    # URL para Planilha do Excel com a planilha atualizada pelo Microsoft Forms
+    # URL da Planilha do Excel no Sharepoint atualizada pelo Microsoft Forms
     sharepoint_url = "https://fiapcom-my.sharepoint.com"
     site_url = "https://fiapcom-my.sharepoint.com/personal/rm554497_fiap_com_br"
 
-    # Caminho do Arquivo
+    # Caminho do Arquivo dentro do Sharepoint
     caminho_arquivo = "Documents/Impacto do Trabalho Remoto na Eficiência do Trabalhador.xlsx"
     arquivo_destino = "planilha.xlsx"
 
     # Credenciais do Microsoft 365
     usuario = os.getenv("USUARIO")
     senha = os.getenv("SENHA")
-
-    caminho_planilha = f"{os.path.dirname(__file__)}\\planilha.xlsx"
 
     try:
         # Autenticação no Microsoft 365
@@ -46,14 +46,14 @@ def baixar_planilha():
         # Acessando a pasta do Sharepoint
         folder = site.Folder("Documents")
 
-        # Baixar arquivo
+        # Baixando arquivo (get)
         file_content = folder.get_file(caminho_arquivo.split('/')[-1])
 
         # Salvar planilha com os dados do formulário
         with open(arquivo_destino, "wb") as f:
             f.write(file_content)
 
-        st.success(f"Arquivo baixado com sucesso! Caminho {caminho_planilha}")
+        st.success(f'Arquivo baixado com sucesso! Caminho do arquivo: "{caminho_planilha}"')
         return arquivo_destino
     except Exception as e:
         st.error(f"Erro ao baixar o arquivo: {str(e)}")
@@ -74,19 +74,17 @@ def ler_dados_planilha(caminho_planilha=None):
         objeto_workbook = openpyxl.load_workbook(caminho_planilha)
         objeto_planilha = objeto_workbook.active
 
-        # Iterando sobre todos os valores da coluna das idades (coluna G) e armazenando em uma lista
+        # Iterando sobre todos os valores das colunas e armazenando em listas
         valores_idade = []
         for celula in objeto_planilha["G"]:
             if celula.value is not None:  # Verifica se a célula não está vazia
                 valores_idade.append(celula.value)
 
-        # Iterando sobre todos os valores da coluna de frequência de trabalho remoto (coluna H)
         valores_frequencia = []
         for celula in objeto_planilha["H"]:
             if celula.value is not None:  # Verifica se a célula não está vazia
                 valores_frequencia.append(celula.value)
 
-        # Iterando sobre todos os valores da coluna de produtividade (coluna I)
         valores_produtividade = []
         for celula in objeto_planilha["I"]:
             if celula.value is not None:  # Verifica se a célula não está vazia
@@ -121,6 +119,7 @@ def main():
     """
     --> Função com a execução da interface principal usando o Streamlit
     """
+
     # Configuração da página
     st.set_page_config(
         page_title="Dashboard Trabalho Remoto",
@@ -128,13 +127,19 @@ def main():
         layout="wide"
     )
 
+    # Verificação da existência do caminho da planilha
+    if os.path.exists(caminho_planilha):
+        pass
+    else:
+        baixar_planilha()
+
     # Título do dashboard
     st.title("📊 Dashboard Trabalho Remoto")
 
     # Sidebar para opções
     st.sidebar.header("⚙️ Opções")
 
-    # Botão para atualizar os dados
+    # Botão para atualizar os dados (executa função para baixar a planilha novamente
     if st.sidebar.button("📥 Baixar dados atualizados"):
         arquivo = baixar_planilha()
         if arquivo:
@@ -157,7 +162,7 @@ def main():
     })
 
     # Ordenar o DataFrame pelas faixas etárias de forma lógica
-    ordem_faixas = ['Menos de 18 anos', '18-24 anos', '25-34 anos', '35-44 anos',
+    ordem_faixas = ['18-24 anos', '25-34 anos', '35-44 anos',
                     '45-54 anos', '55-64 anos', '65 anos ou mais']
 
     # Filtra apenas as faixas que existem nos dados
@@ -212,7 +217,6 @@ def main():
         with metricas_col4:
             # Dicionário para mapear cada faixa etária para um valor aproximado
             valores_medios = {
-                'Menos de 18 anos': 16,
                 '18-24 anos': 21,
                 '25-34 anos': .5,
                 '35-44 anos': 39.5,
@@ -453,6 +457,6 @@ def main():
     )
 
 
-# Executa a aplicação
+# Executa a aplicação somente se for executado diretamente
 if __name__ == "__main__":
     main()
