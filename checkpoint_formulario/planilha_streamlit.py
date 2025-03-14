@@ -140,7 +140,7 @@ def main():
     st.sidebar.header("⚙️ Opções")
 
     # Botão para atualizar os dados (executa função para baixar a planilha novamente
-    if st.sidebar.button("📥 Baixar dados atualizados"):
+    if st.sidebar.button("🔄 Atualizar Dados"):
         arquivo = baixar_planilha()
         if arquivo:
             st.sidebar.success("Dados atualizados com sucesso!")
