@@ -147,6 +147,23 @@ def main():
 
     valores_idade, valores_frequencia = ler_dados_planilha()
 
+    # Lista com as frequências esperadas (exceto "Outra")
+    frequencias_validas = [
+        'Trabalho 100% remoto',
+        'Trabalho em regime híbrido (parte presencial, parte remoto)',
+        'Trabalho principalmente presencial, mas ocasionalmente remoto',
+        'Trabalho exclusivamente presencial'
+    ]
+
+    def classificar_frequencia(texto):
+        if texto in frequencias_validas:
+            return texto
+        else:
+            return 'Outra'
+
+    # Aplica a classificação na lista de frequências coletadas
+    valores_frequencia_classificados = [classificar_frequencia(texto) for texto in valores_frequencia]
+
     if not valores_idade or not valores_frequencia:
         st.warning(
             "Não foi possível ler os dados da planilha. Certifique-se de que o arquivo existe ou use os dados de exemplo.")
@@ -302,7 +319,7 @@ def main():
     st.markdown("---")
 
     # Contagem das frequências de trabalho remoto
-    contagem_frequencia = Counter(valores_frequencia)
+    contagem_frequencia = Counter(valores_frequencia_classificados)
 
     # Criar um DataFrame para facilitar a visualização
     df_frequencia = pd.DataFrame({
