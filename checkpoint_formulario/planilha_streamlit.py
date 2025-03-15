@@ -195,14 +195,16 @@ def main():
     # Criar layout do dashboard em colunas
     col1, col2 = st.columns(2)
 
+    total_respostas = df_idades['Quantidade'].sum()
+
     # Coluna 1: Tabela de Dados
     with col1:
+        st.title(f"Total de Respostas: {total_respostas}")
         st.header("⏳ Idade")
         st.image(f"{os.path.dirname(__file__)}\\assets\\idades.png", caption="Idade dos Participantes da Pesquisa")
         st.subheader("Tabela de Distribuição")
 
         # Adiciona coluna de percentual
-        total_respostas = df_idades['Quantidade'].sum()
         df_idades['Percentual'] = df_idades['Quantidade'].apply(lambda x: f"{(x / total_respostas * 100):.1f}%")
 
         # Exibe a tabela formatada
@@ -217,21 +219,18 @@ def main():
 
         # Adiciona métricas
         st.subheader("Métricas")
-        metricas_col1, metricas_col2, metricas_col3, metricas_col4 = st.columns(4)
+        metricas_col1, metricas_col2, metricas_col3 = st.columns(3)
 
         with metricas_col1:
-            st.metric("Total de Respostas", total_respostas)
-
-        with metricas_col2:
             faixa_mais_comum = df_idades.loc[df_idades['Quantidade'].idxmax(), 'Faixa Etária']
             st.metric("Faixa Etária Mais Comum (Moda)", faixa_mais_comum)
 
-        with metricas_col3:
+        with metricas_col2:
             maior_quantidade = df_idades['Quantidade'].max()
             percentual_maior = (maior_quantidade / total_respostas) * 100
             st.metric("Representação da Faixa Mais Comum", f"{percentual_maior:.1f}%")
 
-        with metricas_col4:
+        with metricas_col3:
             # Dicionário para mapear cada faixa etária para um valor aproximado
             valores_medios = {
                 '18-24 anos': 21,
@@ -372,16 +371,13 @@ def main():
 
         # Adiciona métricas
         st.subheader("Métricas")
-        freq_metricas_col1, freq_metricas_col2, freq_metricas_col3 = st.columns(3)
+        freq_metricas_col1, freq_metricas_col2 = st.columns(2)
 
         with freq_metricas_col1:
-            st.metric("Total de Respostas", total_respostas_freq)
-
-        with freq_metricas_col2:
             freq_mais_comum = df_frequencia.loc[df_frequencia['Quantidade'].idxmax(), 'Frequência']
             st.metric("Frequência Mais Comum", freq_mais_comum)
 
-        with freq_metricas_col3:
+        with freq_metricas_col2:
             maior_quant_freq = df_frequencia['Quantidade'].max()
             percentual_maior_freq = (maior_quant_freq / total_respostas_freq) * 100
             st.metric("Representação", f"{percentual_maior_freq:.1f}%")
