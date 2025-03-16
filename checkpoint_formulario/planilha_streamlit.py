@@ -109,7 +109,7 @@ def ler_dados_planilha(caminho_planilha=None):
         # Fechando o workbook da Planilha
         objeto_workbook.close()
 
-        return valores_idade, valores_frequencia
+        return valores_idade, valores_frequencia, valores_produtividade
     except Exception as e:
         st.error(f"Erro ao ler a planilha: {str(e)}")
         return [], []
@@ -145,7 +145,7 @@ def main():
         if arquivo:
             st.sidebar.success("Dados atualizados com sucesso!")
 
-    valores_idade, valores_frequencia = ler_dados_planilha()
+    valores_idade, valores_frequencia, valores_produtividade = ler_dados_planilha()
 
     # Lista com as frequências esperadas (exceto "Outra")
     frequencias_validas = [
@@ -445,6 +445,105 @@ def main():
         if st.checkbox("Mostrar dados brutos", key="mostrar_dados_frequencia"):
             st.write("Lista de todas as frequências coletadas:")
             st.write(valores_frequencia)
+
+    # --- Seção de Produtividade ---
+    st.markdown("---")
+    st.header("📈 Produtividade")
+
+    # Cria DataFrame com contagem das respostas (valores de 1 a 5)
+    contagem_produtividade = Counter(valores_produtividade)
+    df_produtividade = pd.DataFrame({
+        'Produtividade': list(contagem_produtividade.keys()),
+        'Quantidade': list(contagem_produtividade.values())
+    })
+
+    # Ordena as classificações de 1 a 5
+    ordem_produtividade = [1, 2, 3, 4, 5]
+    df_produtividade['Produtividade'] = pd.Categorical(
+        df_produtividade['Produtividade'],
+        categories=ordem_produtividade,
+        ordered=True
+    )
+    df_produtividade = df_produtividade.sort_values('Quantidade')
+
+    # Calcula a média geral de produtividade
+    media_produtividade = sum(valores_produtividade) / len(valores_produtividade)
+
+    # Cria layout em duas colunas para a seção de produtividade
+    prod_col1, prod_col2 = st.columns(2)
+
+    with prod_col1:
+        # Imagem
+        st.image(f"{os.path.dirname(__file__)}\\assets\\produtividade.png", caption="Produtividade no Trabalho Remoto")
+        st.subheader("Tabela de Distribuição")
+        total_respostas_prod = df_produtividade['Quantidade'].sum()
+        df_produtividade['Percentual'] = df_produtividade['Quantidade'].apply(
+            lambda x: f"{(x / total_respostas_prod * 100):.1f}%"
+        )
+        st.dataframe(
+            df_produtividade,
+            column_config={"Quantidade": st.column_config.NumberColumn(format="%d")},
+            use_container_width=True,
+            hide_index=True
+        )
+        st.subheader("Métricas")
+        st.metric("Média de Produtividade", f"{media_produtividade:.1f}")
+
+    with prod_col2:
+        st.subheader("Visualização Gráfica")
+        tipo_grafico_prod = st.radio(
+            "Selecione o tipo de gráfico:",
+            ["Gráfico de Barras", "Gráfico de Pizza", "Treemap", "Funil"],
+            horizontal=True,
+            key="grafico_produtividade"
+        )
+        if tipo_grafico_prod == "Gráfico de Barras":
+            fig = px.bar(
+                df_produtividade,
+                x='Produtividade',
+                y='Quantidade',
+                text='Quantidade',
+                color='Produtividade',
+                title="Distribuição de Produtividade",
+                height=400
+            )
+            fig.update_layout(xaxis_title="Classificação", yaxis_title="Quantidade")
+            st.plotly_chart(fig, use_container_width=True)
+        elif tipo_grafico_prod == "Gráfico de Pizza":
+            fig = px.pie(
+                df_produtividade,
+                values='Quantidade',
+                names='Produtividade',
+                title="Distribuição de Produtividade (%)",
+                height=400
+            )
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig, use_container_width=True)
+        elif tipo_grafico_prod == "Treemap":
+            fig = px.treemap(
+                df_produtividade,
+                path=['Produtividade'],
+                values='Quantidade',
+                title="Distribuição de Produtividade",
+                height=400
+            )
+            fig.update_traces(textinfo='label+percent entry')
+            st.plotly_chart(fig, use_container_width=True)
+        else:  # Gráfico Funil
+            fig = px.funnel(
+                df_produtividade,
+                x='Quantidade',
+                y='Produtividade',
+                title="Distribuição de Produtividade",
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # Opção para mostrar os dados brutos
+        if st.checkbox("Mostrar dados brutos de Produtividade", key="mostrar_produtividade"):
+            st.write("Lista de classificações de produtividade:")
+            st.write(valores_produtividade)
+
     # Sobre o dashboard
     st.sidebar.markdown("---")
     st.sidebar.subheader("Sobre")
