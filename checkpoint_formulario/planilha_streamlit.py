@@ -19,44 +19,49 @@ def baixar_planilha():
     """
     --> Função para baixar a planilha do Microsoft 365 no SharePoint
     """
+
     # Carregando variáveis de ambiente (credenciais de usuário)
-    load_dotenv()
+    if load_dotenv():
 
-    # Configurações do certificado SSL (Firewall da FIAP)
-    urllib3.disable_warnings()  # Desabilita os avisos do certificado SSL
-    ssl._create_default_https_context = ssl._create_unverified_context  # Criando um contexto que não verifica a certificação SSL
+        # Configurações do certificado SSL (Firewall da FIAP)
+        urllib3.disable_warnings()  # Desabilita os avisos do certificado SSL
+        ssl._create_default_https_context = ssl._create_unverified_context  # Criando um contexto que não verifica a certificação SSL
 
-    # URL da Planilha do Excel no Sharepoint atualizada pelo Microsoft Forms
-    sharepoint_url = "https://fiapcom-my.sharepoint.com"
-    site_url = "https://fiapcom-my.sharepoint.com/personal/rm554497_fiap_com_br"
+        # URL da Planilha do Excel no Sharepoint atualizada pelo Microsoft Forms
+        sharepoint_url = "https://fiapcom-my.sharepoint.com"
+        site_url = "https://fiapcom-my.sharepoint.com/personal/rm554497_fiap_com_br"
 
-    # Caminho do Arquivo dentro do Sharepoint
-    caminho_arquivo = "Documents/Impacto do Trabalho Remoto na Eficiência do Trabalhador.xlsx"
-    arquivo_destino = "planilha.xlsx"
+        # Caminho do Arquivo dentro do Sharepoint
+        caminho_arquivo = "Documents/Impacto do Trabalho Remoto na Eficiência do Trabalhador.xlsx"
+        arquivo_destino = "planilha.xlsx"
 
-    # Credenciais do Microsoft 365
-    usuario = os.getenv("USUARIO")
-    senha = os.getenv("SENHA")
+        # Credenciais do Microsoft 365
+        usuario = os.getenv("USUARIO")
+        senha = os.getenv("SENHA")
 
-    try:
-        # Autenticação no Microsoft 365
-        authcookie = Office365(sharepoint_url, username=usuario, password=senha).GetCookies()
-        site = Site(site_url, version=Version.v365, authcookie=authcookie)
+        try:
+            # Autenticação no Microsoft 365
+            authcookie = Office365(sharepoint_url, username=usuario, password=senha).GetCookies()
+            site = Site(site_url, version=Version.v365, authcookie=authcookie)
 
-        # Acessando a pasta do Sharepoint
-        folder = site.Folder("Documents")
+            # Acessando a pasta do Sharepoint
+            folder = site.Folder("Documents")
 
-        # Baixando arquivo (get)
-        file_content = folder.get_file(caminho_arquivo.split('/')[-1])
+            # Baixando arquivo (get)
+            file_content = folder.get_file(caminho_arquivo.split('/')[-1])
 
-        # Salvar planilha com os dados do formulário
-        with open(arquivo_destino, "wb") as f:
-            f.write(file_content)
+            # Salvar planilha com os dados do formulário
+            with open(arquivo_destino, "wb") as f:
+                f.write(file_content)
 
-        st.success(f'Arquivo baixado com sucesso! Caminho do arquivo: "{caminho_planilha}"')
-        return arquivo_destino
-    except Exception as e:
-        st.error(f"Erro ao baixar o arquivo: {str(e)}")
+            st.success(f'Arquivo baixado com sucesso! Caminho do arquivo: "{caminho_planilha}"')
+            return arquivo_destino
+        except Exception as e:
+            st.error(f"Erro ao baixar o arquivo: {str(e)}")
+            traceback.print_exc()
+            return None
+    else:
+        st.error("Erro ao carregar variáveis de ambiente (.env)")
         traceback.print_exc()
         return None
 
@@ -114,7 +119,7 @@ def ler_dados_planilha(caminho_planilha=None):
 
         valores_eficiencia = []
         for celula in objeto_planilha["J"]:
-            if celula.value is not None: # Verifica se a célula não está vazia
+            if celula.value is not None:  # Verifica se a célula não está vazia
                 valores_eficiencia.append(celula.value)
 
         # Remove o cabeçalho
@@ -375,7 +380,8 @@ def main():
     })
 
     # Ordenar o DataFrame por frequência de trabalho remoto de forma lógica
-    ordem_frequencia = ['Trabalho 100% remoto', 'Trabalho em regime híbrido (parte presencial, parte remoto)', 'Trabalho principalmente presencial, mas ocasionalmente remoto',
+    ordem_frequencia = ['Trabalho 100% remoto', 'Trabalho em regime híbrido (parte presencial, parte remoto)',
+                        'Trabalho principalmente presencial, mas ocasionalmente remoto',
                         'Trabalho exclusivamente presencial', 'Outra']
 
     # Filtra apenas as frequências que existem nos dados
@@ -429,7 +435,6 @@ def main():
             maior_quant_freq = df_frequencia['Quantidade'].max()
             percentual_maior_freq = (maior_quant_freq / total_respostas_freq) * 100
             st.metric("Representação", f"{percentual_maior_freq:.1f}%")
-
 
     # Coluna 2: Visualizações Gráficas de Frequência
     with freq_col2:
@@ -744,7 +749,6 @@ def main():
         - Nicolas Caciolato Reis - RM556506
         """
     )
-
 
 
 # Executa a aplicação somente se for executado diretamente
