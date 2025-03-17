@@ -61,6 +61,21 @@ def baixar_planilha():
         return None
 
 
+# Função para processar respostas de múltipla escolha
+def processar_multipla_escolha(lista_respostas):
+    # Lista para armazenar todas as opções individuais
+    todas_opcoes = []
+
+    for resposta in lista_respostas:
+        if isinstance(resposta, str):
+            # Divide a string usando ponto-e-vírgula como separador
+            opcoes = resposta.split(';')
+            # Adiciona cada opção individual à lista
+            todas_opcoes.extend([opcao.strip() for opcao in opcoes if opcao.strip()])
+
+    return todas_opcoes
+
+
 def ler_dados_planilha(caminho_planilha=None):
     """
     --> Função para ler os dados da planilha já baixada
@@ -97,6 +112,11 @@ def ler_dados_planilha(caminho_planilha=None):
                     except:
                         pass  # Ignora valores que não podem ser convertidos
 
+        valores_eficiencia = []
+        for celula in objeto_planilha["J"]:
+            if celula.value is not None: # Verifica se a célula não está vazia
+                valores_eficiencia.append(celula.value)
+
         # Remove o cabeçalho
         if valores_idade and isinstance(valores_idade[0], str) and not any(
                 d in valores_idade[0].lower() for d in ['ano', '18-', '25-', '35-']):
@@ -106,10 +126,14 @@ def ler_dados_planilha(caminho_planilha=None):
         if valores_frequencia and isinstance(valores_frequencia[0], str):
             valores_frequencia.pop(0)
 
+        # Remove o cabeçalho da eficiência
+        if valores_eficiencia and isinstance(valores_eficiencia[0], str):
+            valores_eficiencia.pop(0)
+
         # Fechando o workbook da Planilha
         objeto_workbook.close()
 
-        return valores_idade, valores_frequencia, valores_produtividade
+        return valores_idade, valores_frequencia, valores_produtividade, valores_eficiencia
     except Exception as e:
         st.error(f"Erro ao ler a planilha: {str(e)}")
         return [], []
@@ -145,7 +169,7 @@ def main():
         if arquivo:
             st.sidebar.success("Dados atualizados com sucesso!")
 
-    valores_idade, valores_frequencia, valores_produtividade = ler_dados_planilha()
+    valores_idade, valores_frequencia, valores_produtividade, valores_eficiencia = ler_dados_planilha()
 
     # Lista com as frequências esperadas (exceto "Outra")
     frequencias_validas = [
@@ -161,10 +185,34 @@ def main():
         else:
             return 'Outra'
 
+    # Lista com as eficiências esperadas
+    eficiencias_validas = [
+        'Ausência de deslocamento',
+        'Ambiente de trabalho personalizado',
+        'Menos interrupções/distrações',
+        'Horários flexíveis',
+        'Melhor equilíbrio entre vida profissional e pessoal',
+        'Maior autonomia'
+    ]
+
+    def classificar_eficiencia(texto):
+        if texto in eficiencias_validas:
+            return texto
+        else:
+            return 'Nenhuma das opções acima'
+
     # Aplica a classificação na lista de frequências coletadas
     valores_frequencia_classificados = [classificar_frequencia(texto) for texto in valores_frequencia]
+    # Na parte onde você processa os dados de eficiência:
+    valores_eficiencia_individuais = processar_multipla_escolha(valores_eficiencia)
 
-    if not valores_idade or not valores_frequencia:
+    # Agora classifique as opções individuais
+    valores_eficiencia_classificadas = [classificar_eficiencia(texto) for texto in valores_eficiencia_individuais]
+
+    # Contagem das frequências de eficiência
+    contagem_eficiencia = Counter(valores_eficiencia_classificadas)
+
+    if not valores_idade or not valores_frequencia or not valores_eficiencia or not valores_produtividade:
         st.warning(
             "Não foi possível ler os dados da planilha. Certifique-se de que o arquivo existe ou use os dados de exemplo.")
         st.stop()
@@ -446,7 +494,6 @@ def main():
             st.write("Lista de todas as frequências coletadas:")
             st.write(valores_frequencia)
 
-    # --- Seção de Produtividade ---
     st.markdown("---")
     st.header("📈 Produtividade")
 
@@ -544,6 +591,130 @@ def main():
             st.write("Lista de classificações de produtividade:")
             st.write(valores_produtividade)
 
+    st.markdown("---")
+
+    # Criar um DataFrame para facilitar a visualização
+    df_eficiencia = pd.DataFrame({
+        'Eficiência': list(contagem_eficiencia.keys()),
+        'Quantidade': list(contagem_eficiencia.values())
+    })
+
+    # Ordenar o DataFrame por eficiência
+    ordem_eficiencia = [
+        'Ausência de deslocamento',
+        'Ambiente de trabalho personalizado',
+        'Menos interrupções/distrações',
+        'Horários flexíveis',
+        'Melhor equilíbrio entre vida profissional e pessoal',
+        'Maior autonomia'
+    ]
+
+    # Filtra apenas as eficiência que existem nos dados
+    ordem_eficiencia_filtrada = [efic for efic in ordem_eficiencia if efic in df_eficiencia['Eficiência'].values]
+
+    # Ordena o DataFrame se houver eficiências válidas
+    if ordem_eficiencia_filtrada:
+        df_eficiencia['Eficiência'] = pd.Categorical(df_eficiencia['Eficiência'],
+                                                     categories=ordem_eficiencia_filtrada,
+                                                     ordered=True)
+        df_eficiencia = df_eficiencia.sort_values('Eficiência')
+
+    # Criar layout da segunda seção em colunas
+    freq_col1, freq_col2 = st.columns(2)
+
+    # Coluna 1: Tabela de Dados de Eficiência
+    with freq_col1:
+
+        st.header("💪🏻 Aspectos da Eficiência")
+
+        # Imagem
+        st.image(f"{os.path.dirname(__file__)}\\assets\\eficiencia.jpg", caption="Eficiência")
+
+        st.subheader("Tabela de Distribuição")
+
+        # Adiciona coluna de percentual
+        total_respostas_efic = df_eficiencia['Quantidade'].sum()
+        df_eficiencia['Percentual'] = df_eficiencia['Quantidade'].apply(
+            lambda x: f"{(x / total_respostas_efic * 100):.1f}%")
+
+        # Exibe a tabela formatada
+        st.dataframe(
+            df_eficiencia,
+            column_config={
+                "Quantidade": st.column_config.NumberColumn(format="%d"),
+            },
+            use_container_width=True,
+            hide_index=True
+        )
+
+        # Adiciona métricas
+        st.subheader("Métricas")
+        efic_metricas_col1, efic_metricas_col2 = st.columns(2)
+
+        with efic_metricas_col1:
+            efic_mais_comum = df_eficiencia.loc[df_eficiencia['Quantidade'].idxmax(), 'Eficiência']
+            st.metric("Frequência Mais Comum", efic_mais_comum)
+
+        with efic_metricas_col2:
+            maior_quant_efic = df_eficiencia['Quantidade'].max()
+            percentual_maior_efic = (maior_quant_efic / total_respostas_efic) * 100
+            st.metric("Representação", f"{percentual_maior_efic:.1f}%")
+
+    # Coluna 2: Visualizações Gráficas de Eficiência
+    with freq_col2:
+        # Tipo de gráfico (com radio buttons)
+        tipo_grafico_efic = st.radio(
+            "Selecione o tipo de gráfico:",
+            ["Gráfico de Barras", "Gráfico de Pizza", "Treemap", "Funil"],
+            horizontal=True,
+            key="grafico_eficiencia"  # Chave única para este componente
+        )
+
+        if tipo_grafico_efic == "Gráfico de Barras":
+            fig = px.bar(
+                df_eficiencia,
+                x='Eficiência',
+                y='Quantidade',
+                text='Quantidade',
+                color='Eficiência',
+                title="Distribuição por Eficiência de Trabalho Remoto",
+                height=400
+            )
+            fig.update_layout(xaxis_title="Eficiência", yaxis_title="Quantidade")
+            st.plotly_chart(fig, use_container_width=True)
+
+        elif tipo_grafico_efic == "Gráfico de Pizza":
+            fig = px.pie(
+                df_eficiencia,
+                values='Quantidade',
+                names='Eficiência',
+                title="Distribuição por Eficiência de Trabalho Remoto (%)",
+                height=400
+            )
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig, use_container_width=True)
+
+        elif tipo_grafico_efic == "Treemap":  # Corrigido: estava usando tipo_grafico_freq
+            fig = px.treemap(
+                df_eficiencia,
+                path=['Eficiência'],
+                values='Quantidade',
+                title="Distribuição por Eficiência",
+                height=400
+            )
+            fig.update_traces(textinfo='label+percent entry')
+            st.plotly_chart(fig, use_container_width=True)
+
+        else:  # Funil
+            fig = px.funnel(
+                df_eficiencia,
+                x='Quantidade',
+                y='Eficiência',
+                title="Distribuição por Eficiência de Trabalho Remoto",
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
     # Sobre o dashboard
     st.sidebar.markdown("---")
     st.sidebar.subheader("Sobre")
@@ -567,6 +738,7 @@ def main():
         - Vitor Chaves - RM557067
         """
     )
+
 
 
 # Executa a aplicação somente se for executado diretamente
