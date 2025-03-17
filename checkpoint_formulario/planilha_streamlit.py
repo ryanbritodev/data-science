@@ -715,6 +715,11 @@ def main():
             )
             st.plotly_chart(fig, use_container_width=True)
 
+        # Opção para mostrar os dados brutos
+        if st.checkbox("Mostrar dados brutos de Eficiência", key="mostrar_eficiencia"):
+            st.write("Lista de classificações de eficiencia:")
+            st.write(valores_eficiencia)
+
     # Sobre o dashboard
     st.sidebar.markdown("---")
     st.sidebar.subheader("Sobre")
@@ -736,6 +741,7 @@ def main():
         - Felipe Sousa de Oliveira - RM559085
         - Ryan Brito Pereira Ramos - RM554497
         - Vitor Chaves - RM557067
+        - Nicolas Caciolato Reis - RM556506
         """
     )
 
